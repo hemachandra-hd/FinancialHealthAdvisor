@@ -1,0 +1,74 @@
+import os
+import fitz  # PyMuPDF
+import json
+import re
+from dotenv import load_dotenv
+import google.generativeai as genai
+
+# ✅ Load environment variables
+load_dotenv()
+
+def extract_fields_with_gemini(pdf_path):
+    # ✅ Extract raw text from PDF
+    doc = fitz.open(pdf_path)
+    text = "\n".join([page.get_text() for page in doc])
+
+    # ✅ Gemini setup
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise EnvironmentError("GEMINI_API_KEY not set. Please check environment variables.")
+
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-pro-latest')
+
+    prompt = f"""
+You are a financial assistant. The following is raw text extracted from an employee's pay stub.
+
+Please extract the following information and return it as a valid JSON object (no markdown or explanation).
+
+Required Fields:
+- Employee Name
+- Company
+- Employee ID
+- Department
+- Period Beginning
+- Period Ending
+- Pay Date
+- Gross Pay
+- Net Pay
+- Federal Income Tax
+- State Income Tax
+- Social Security
+- Medicare
+- Rate (hourly or salary rate, if available)
+- Hours Worked (if available)
+
+Instructions:
+- Format all monetary values as decimals (e.g., 3671.20)
+- If a value is not found, return `null`
+- Use `-` prefix for deductions (e.g., -192.97)
+- Respond only with a valid JSON object
+
+Raw Paystub Text:
+\"\"\"
+{text}
+\"\"\"
+"""
+
+    response = model.generate_content(prompt)
+
+    # ✅ Clean Gemini response
+    cleaned = response.text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(json)?|```$", "", cleaned, flags=re.IGNORECASE).strip()
+
+    cleaned = cleaned.replace("−", "-")
+    cleaned = re.sub(r"\$?(\d{1,3})\s(\d{3})\s(\d{2})", r"\1\2.\3", cleaned)
+    cleaned = re.sub(r"\$?(\d{1,3})\s(\d{2})", r"\1.\2", cleaned)
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        print("❌ JSON parsing failed. Raw cleaned response:\n")
+        print(cleaned)
+        return None

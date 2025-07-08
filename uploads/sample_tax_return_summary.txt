@@ -1,0 +1,8 @@
+Taxpayer Name: Hemachandra HD
+Employer: ABC Corporation
+Year: 2024
+
+Total Income: $90,000
+Federal Taxes Paid: $12,000
+State Taxes Paid: $3,000
+Refund: $1,200

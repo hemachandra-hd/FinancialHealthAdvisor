@@ -1,0 +1,9 @@
+Monthly Income: $7,500
+Fixed Expenses:
+    - Rent: $1,500
+    - Car Loan: $400
+    - Insurance: $200
+Variable Expenses:
+    - Groceries: $400
+    - Entertainment: $300
+Savings Goal: $1,000 per month
